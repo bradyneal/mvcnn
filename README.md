@@ -32,6 +32,7 @@ compile for GPU (w/ cuDNN):
 # 1) two environment variables might need to be set, e.g. MATLABDIR=<MATLAB_ROOT> MEX=<MATLAB_ROOT>/bin/mex
 # 2) other compilation options (e.g. 'cudaRoot',<CUDA_ROOT>,'cudaMethod','nvcc','cudnnRoot',<CUDNN_ROOT>) 
 #  might be needed in the 'struct(...)' as well depending on you system settings
+# (e.g. matlab -nodisplay -r "setup(true,struct('enableGpu',true,'enableCudnn',true,'cudaRoot','/usr/local/cuda-7.5/','cudnnRoot','/usr/local/cuda-7.5-cudnn4/'));exit;")
 matlab -nodisplay -r "setup(true,struct('enableGpu',true,'enableCudnn',true));exit;"
 ```
 **Note**: you can alternatively run directly the scripts from the Matlab command window, e.g. for Windows installations:
