@@ -20,6 +20,7 @@ end
 
 addpath(genpath('dataset'));
 addpath(genpath('utils'));
+addpath(genpath('netvlad'));
 
 % -------------------------------------------------------------------------
 %                                                                liblinear
