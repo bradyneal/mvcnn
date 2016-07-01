@@ -32,7 +32,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 
                 % didn't want to complicate with batches here as it's only done once (per network and training set)
                 
-                im= vl_imreadjpeg({[dbTrain.dbPath, dbTrain.dbImageFns{iIm}]});
+                im= vl_imreadjpeg({fullfile(dbTrain.imageDir, dbTrain.images.name{iIm})});
                 im= im{1};
                 
                 % fix non-colour images
@@ -40,9 +40,15 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                     im= cat(3,im,im,im);
                 end
                 
-                im(:,:,1)= im(:,:,1) - net.meta.normalization.averageImage(1,1,1);
-                im(:,:,2)= im(:,:,2) - net.meta.normalization.averageImage(1,1,2);
-                im(:,:,3)= im(:,:,3) - net.meta.normalization.averageImage(1,1,3);
+                if numel(net.meta.normalization.averageImage) == 3
+                    im(:,:,1)= im(:,:,1) - net.meta.normalization.averageImage(1);
+                    im(:,:,2)= im(:,:,2) - net.meta.normalization.averageImage(2);
+                    im(:,:,3)= im(:,:,3) - net.meta.normalization.averageImage(3);
+                else
+                    im(:,:,1)= im(:,:,1) - net.meta.normalization.averageImage(1,1,1);
+                    im(:,:,2)= im(:,:,2) - net.meta.normalization.averageImage(1,1,2);
+                    im(:,:,3)= im(:,:,3) - net.meta.normalization.averageImage(1,1,3);
+                end
                 
                 if opts.useGPU
                     im= gpuArray(im);
