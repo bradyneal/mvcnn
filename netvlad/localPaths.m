@@ -39,7 +39,7 @@ function paths= localPaths()
     % --- initialization data (off-the-shelf descriptors, clusters)
     % Not necessary: these can be computed automatically, but it is recommended
     % in order to use the same initialization as we used in our work
-    paths.initData= '~/Data/netvlad/initdata/';
+    paths.initData= 'data/initdata/';
     
     % --- output directory
     paths.outPrefix= 'data/output/';
