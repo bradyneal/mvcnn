@@ -3,7 +3,7 @@ function net= addLayers(net, opts, dbTrain)
     
     
     methodOpts= strsplit(opts.method, '_');
-    [~, sz]= relja_netOutputDim(net);
+    [~, sz]= relja_netOutputDim(net, net.meta.inputSize);
     D= sz(3);
     
     if ismember('preL2', methodOpts)
