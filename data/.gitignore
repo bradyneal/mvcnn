@@ -2,3 +2,4 @@
 !.gitignore
 !imdb*.mat
 !initdata/
+!output/
