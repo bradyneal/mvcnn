@@ -1,4 +1,4 @@
-function net= loadNet(netID, layerName)
+function [frontNet, backNet] = loadNet(netID, layerName)
     if nargin<2, layerName= '_relja_none_'; end
     
     switch netID
@@ -25,17 +25,31 @@ function net= loadNet(netID, layerName)
         net.meta= rmfield(net.meta, 'classes');
     end
     
+    frontNet = net;
+    backNet = {};
     if ~strcmp(layerName, '_relja_none_')
-        net= relja_cropToLayer(net, layerName);
+        frontNet = relja_cropToLayer(net, layerName);
+        % default assumes there are ReLU and pooling layers following conv
+        backNet = cropFront(net, layerName, 2);
+        backNet= relja_swapLayersForEfficiency(backNet);
         layerNameStr= ['_', layerName];
     else
         layerNameStr= '';
     end
-    net= relja_swapLayersForEfficiency(net);
     
-    net.meta.netID= netID;
+    frontNet= relja_swapLayersForEfficiency(frontNet);
     
-    net.meta.sessionID= sprintf('%s_offtheshelf%s', netID, layerNameStr);
-    net.meta.epoch= 0;
+    frontNet.meta.netID= netID;
     
+    frontNet.meta.sessionID= sprintf('%s_offtheshelf%s', netID, layerNameStr);
+    frontNet.meta.epoch= 0;
+    
+end
+
+
+function net = cropFront(net, layerName, offset)
+    if nargin < 3
+        offset = 0;
+    end
+    net.layers= net.layers(relja_whichLayer(net, layerName) + 1 + offset:end);
 end
