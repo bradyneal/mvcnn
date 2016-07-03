@@ -45,7 +45,7 @@ function serialAllFeats(net, imPath, imageFns, outFn, varargin)
         iStart= (iBatch-1)*opts.batchSize +1;
         iEnd= min(iStart + opts.batchSize-1, nImages);
         
-        thisImageFns= strcagt( imPath, imageFns(iStart:iEnd) );
+        thisImageFns= fullfile( imPath, imageFns(iStart:iEnd) );
         thisNumIms= iEnd-iStart+1;
         
         ims_= vl_imreadjpeg(thisImageFns, 'numThreads', opts.numThreads);
@@ -58,10 +58,17 @@ function serialAllFeats(net, imPath, imageFns, outFn, varargin)
         end
         ims= cat(4, ims_{:});
         
-        ims(:,:,1,:)= ims(:,:,1,:) - net.meta.normalization.averageImage(1,1,1);
-        ims(:,:,2,:)= ims(:,:,2,:) - net.meta.normalization.averageImage(1,1,2);
-        ims(:,:,3,:)= ims(:,:,3,:) - net.meta.normalization.averageImage(1,1,3);
         
+        if numel(net.meta.normalization.averageImage) == 3
+            ims(:,:,1,:)= ims(:,:,1,:) - net.meta.normalization.averageImage(1);
+            ims(:,:,2,:)= ims(:,:,2,:) - net.meta.normalization.averageImage(2);
+            ims(:,:,3,:)= ims(:,:,3,:) - net.meta.normalization.averageImage(3);
+        else
+            ims(:,:,1,:)= ims(:,:,1,:) - net.meta.normalization.averageImage(1,1,1);
+            ims(:,:,2,:)= ims(:,:,2,:) - net.meta.normalization.averageImage(1,1,2);
+            ims(:,:,3,:)= ims(:,:,3,:) - net.meta.normalization.averageImage(1,1,3);
+        end
+            
         if opts.useGPU
             ims= gpuArray(ims);
         end
