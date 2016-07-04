@@ -1,23 +1,7 @@
-function [frontNet, backNet] = loadNet(netID, layerName)
+function [frontNet, backNet] = loadNet(netFilePath, layerName)
     if nargin<2, layerName= '_relja_none_'; end
     
-    switch netID
-        case 'vd16'
-            netname= 'imagenet-vgg-verydeep-16.mat';
-        case 'vd19'
-            netname= 'imagenet-vgg-verydeep-19.mat';
-        case 'caffe'
-            netname= 'imagenet-caffe-ref.mat';
-        case 'places'
-            netname= 'places-caffe.mat';
-        case 'vgg-m'
-            netname = 'imagenet-matconvnet-vgg-m.mat';
-        otherwise
-            error( 'Unknown network ID', netID );
-    end
-    
-    paths= localPaths();
-    net= load( fullfile(paths.pretrainedCNNs, netname));
+    net= load(netFilePath);
     
     net= vl_simplenn_tidy(net); % matconvnet beta17 or newer is needed
     
