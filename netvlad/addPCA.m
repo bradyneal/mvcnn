@@ -26,7 +26,7 @@ function net= addPCA(net, dbTrain, varargin)
         if ~exist(trainDbFeatFn, 'file')
             relja_display('%s Computing training vectors for PCA', net.meta.sessionID);
             
-            imageFns= dbTrain.images.name;
+            imageFns= dbTrain.dbImageFns;
             nTrain= length(imageFns);
             
             if nTrain>opts.nTrainCap
@@ -34,7 +34,7 @@ function net= addPCA(net, dbTrain, varargin)
                 imageFns= imageFns(randsample(nTrain, opts.nTrainCap));
             end
             
-            serialAllFeats(net, dbTrain.imageDir, imageFns, trainDbFeatFn, ...
+            serialAllFeats(net, dbTrain.dbPath, imageFns, trainDbFeatFn, ...
                 'useGPU', opts.useGPU, 'numThreads', opts.numThreads, 'batchSize', opts.batchSize);
             clear nTrain;
         end
