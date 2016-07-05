@@ -32,7 +32,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 
                 % didn't want to complicate with batches here as it's only done once (per network and training set)
                 
-                im= vl_imreadjpeg({fullfile(dbTrain.imageDir, dbTrain.images.name{iIm})});
+                im= vl_imreadjpeg({fullfile(dbTrain.dbPath, dbTrain.dbImageFns{iIm})});
                 im= im{1};
                 
                 % fix non-colour images
