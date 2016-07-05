@@ -127,7 +127,18 @@ switch opts.networkType
   case 'dagnn', trainFn = @cnn_train_dag ;
 end
 
-trainable_layers = find(cellfun(@(l) isfield(l,'weights'),net.layers)); 
+trainable_layers = find(cellfun(@(l) isfield(l, 'weights') || ...
+                                     isprop(l, 'weights'), net.layers));
+assignin('base', 'net', net);
+disp('Trainable layers:')
+for i = 1:numel(trainable_layers)
+    l = trainable_layers(i);
+    if isfield(net.layers{l}, 'learningRate') || isprop(net.layers{l}, 'learningRate')
+        disp(net.layers{l}.name)
+    else
+        fprintf('Unexpected: layer %d (%s) has no learning rate\n', l, net.layers{l}.name)
+    end
+end
 fc_layers = find(cellfun(@(s) numel(s.name)>=2 && strcmp(s.name(1:2),'fc'),net.layers));
 fc_layers = intersect(fc_layers, trainable_layers); 
 lr = cellfun(@(l) l.learningRate, net.layers(trainable_layers),'UniformOutput',false); 
