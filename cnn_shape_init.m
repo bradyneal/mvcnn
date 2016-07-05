@@ -1,6 +1,9 @@
 function net = cnn_shape_init(classNames, varargin)
 opts.base = 'imagenet-matconvnet-vgg-m'; 
-opts.restart = false; 
+opts.restart = false;
+opts.netvlad = false;
+opts.netvladPos = 'conv5';
+opts.dbTrain = 'not provided';
 opts.nViews = 12; 
 opts.viewpoolPos = 'relu5'; 
 opts.viewpoolType = 'max';
@@ -29,8 +32,6 @@ if ~exist(netFilePath,'file')
     fprintf(' done!\n');
 end
 
-dataType = class(net.layers{end-1}.weights{1});
-
 % Load network and optionally add NetVLAD layer
 if opts.netvlad
     netvladOpts.netID = 'vgg-m';
@@ -40,25 +41,28 @@ if opts.netvlad
     
     % Load the network and split into two different groups of layers
     % (splitting is to allow for adding of NetVLAD and PCA layers)
-    [frontNet, backNet] = loadNet(netFilePath, opts.netvladPos);
+    [frontNet, backNet] = loadNet(netFilePath, netvladOpts.netID, opts.netvladPos);
     % Add NetVLAD layers
     frontNet = addLayers(frontNet, netvladOpts, opts.dbTrain);
     % Add PCA and whitening layers
     frontNet = addPCA(frontNet, opts.dbTrain, 'doWhite', true, 'pcaDim', 4096, ...
-       'batchSize', 10, 'useGPU', opts.useGPU);
+       'batchSize', 10, 'useGPU', netvladOpts.useGPU);
     
     % Append back layers to the network
     net = frontNet;
     net.layers = [frontNet.layers backNet.layers];
     
-    % Fix weight matrix dimensions where the two networks were put together 
+    % Fix weight matrix dimensions where the two networks were put together
+    dataType = class(net.layers{end-1}.weights{1});
     sz = [1 1 size(net.layers{16}.weights{2}, 1) 4096]; 
     net.layers{18}.weights{1} = init_weight(...
         struct('weightInitMethod', opts.weightInitMethod), ...
         sz(1), sz(2), sz(3), sz(4), dataType);
     net.layers{18}.weights{2} = zeros(sz(4), 1, dataType);
 else
-    [net, ~] = loadNet(netFilePath);
+    netvladOpts.netID = 'vgg-m';
+    [net, ~] = loadNet(netFilePath, netvladOpts.netID);
+    dataType = class(net.layers{end-1}.weights{1});
 end
 
 assert(strcmp(net.layers{end}.type, 'softmax'), 'Wrong network format'); 

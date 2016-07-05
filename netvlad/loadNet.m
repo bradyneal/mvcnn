@@ -1,5 +1,5 @@
-function [frontNet, backNet] = loadNet(netFilePath, layerName)
-    if nargin<2, layerName= '_relja_none_'; end
+function [frontNet, backNet] = loadNet(netFilePath, netID, layerName)
+    if nargin<3, layerName= '_relja_none_'; end
     
     net= load(netFilePath);
     
