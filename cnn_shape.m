@@ -40,6 +40,8 @@ opts.fromScratch = false;
 opts.dataRoot = 'data' ;
 opts.imageExt = '.jpg';
 opts.numFetchThreads = 0 ;
+opts.netvlad = false;
+opts.netvladPos = 'conv5';
 opts.multiview = true; 
 opts.viewpoolPos = 'relu5';
 opts.useUprightAssumption = true;
@@ -50,22 +52,15 @@ opts.numEpochs = [5 10 20];
 opts.includeVal = false;
 [opts, varargin] = vl_argparse(opts, varargin) ;
 
-if strcmpi(opts.baseModel(end-3:end),'.mat'), 
-  [~,modelNameStr] = fileparts(opts.baseModel); 
-  opts.baseModel = load(opts.baseModel);
-else
-  modelNameStr = opts.baseModel; 
-end
-
 if opts.multiview, 
   opts.expDir = sprintf('%s-ft-%s-%s-%s', ...
-    modelNameStr, ...
+    opts.baseModel, ...
     dataName, ...
     opts.viewpoolPos, ...
     opts.networkType); 
 else
   opts.expDir = sprintf('%s-ft-%s-%s', ...
-    modelNameStr, ...
+    opts.baseModel, ...
     dataName, ...
     opts.networkType); 
 end
@@ -105,15 +100,24 @@ end
 opts.train.train = opts.train.train(1:nViews:end);
 opts.train.val = opts.train.val(1:nViews:end); 
 
+% dbTrain used for NetVLAD
+dbTrain.dbPath = imdb.imageDir;
+dbTrain.dbImageFns = imdb.images.name([opts.train.train opts.train.val]);
+dbTrain.name = dataName;
+dbTrain.numImages = numel(dbTrain.dbImageFns);
+
 % -------------------------------------------------------------------------
 %                                                            Prepare model
 % -------------------------------------------------------------------------
 net = cnn_shape_init(imdb.meta.classes, ...
   'base', opts.baseModel, ...
   'restart', opts.fromScratch, ...
+  'netvlad', opts.netvlad, ...
+  'netvladPos', opts.netvladPos, ...
   'nViews', nViews, ...
   'viewpoolPos', opts.viewpoolPos, ...
-  'networkType', opts.networkType);  
+  'networkType', opts.networkType, ...
+  'dbTrain', dbTrain);  
 
 % -------------------------------------------------------------------------
 %                                                                    Learn 

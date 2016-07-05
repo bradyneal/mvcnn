@@ -3,7 +3,7 @@ opts.base = 'imagenet-matconvnet-vgg-m';
 opts.restart = false; 
 opts.nViews = 12; 
 opts.viewpoolPos = 'relu5'; 
-opts.viewpoolType = 'max'; 
+opts.viewpoolType = 'max';
 opts.weightInitMethod = 'xavierimproved';
 opts.scale = 1;
 opts.networkType = 'simplenn'; % only simplenn is supported currently
@@ -14,29 +14,61 @@ assert(strcmp(opts.networkType,'simplenn'), 'Only simplenn is supported currentl
 init_bias = 0.1;
 nClass = length(classNames);
 
-% Load model, try to download it if not readily available
-if ~ischar(opts.base), 
-  net = opts.base; 
-else
-  netFilePath = fullfile('data','models', [opts.base '.mat']);
-  if ~exist(netFilePath,'file'),
+% Add .mat file extension if not already there and get path to file
+if ~strcmpi(opts.base(end - 3:end),'.mat')
+    opts.base = strcat(opts.base, '.mat');
+end
+netFilePath = fullfile('data','models', opts.base);
+
+% Download network if doesn't already exist
+if ~exist(netFilePath,'file')
     fprintf('Downloading model (%s) ...', opts.base) ;
     vl_xmkdir(fullfile('data','models')) ;
     urlwrite(fullfile('http://www.vlfeat.org/matconvnet/models/', ...
-      [opts.base '.mat']), netFilePath) ;
+      opts.base), netFilePath) ;
     fprintf(' done!\n');
-  end
-  net = load(netFilePath);
 end
+
+dataType = class(net.layers{end-1}.weights{1});
+
+% Load network and optionally add NetVLAD layer
+if opts.netvlad
+    netvladOpts.netID = 'vgg-m';
+    netvladOpts.layerName = 'conv5';
+    netvladOpts.method= 'vlad_preL2_intra';
+    netvladOpts.useGPU = false; 
+    
+    % Load the network and split into two different groups of layers
+    % (splitting is to allow for adding of NetVLAD and PCA layers)
+    [frontNet, backNet] = loadNet(netFilePath, opts.netvladPos);
+    % Add NetVLAD layers
+    frontNet = addLayers(frontNet, netvladOpts, opts.dbTrain);
+    % Add PCA and whitening layers
+    frontNet = addPCA(frontNet, opts.dbTrain, 'doWhite', true, 'pcaDim', 4096, ...
+       'batchSize', 10, 'useGPU', opts.useGPU);
+    
+    % Append back layers to the network
+    net = frontNet;
+    net.layers = [frontNet.layers backNet.layers];
+    
+    % Fix weight matrix dimensions where the two networks were put together 
+    sz = [1 1 size(net.layers{16}.weights{2}, 1) 4096]; 
+    net.layers{18}.weights{1} = init_weight(...
+        struct('weightInitMethod', opts.weightInitMethod), ...
+        sz(1), sz(2), sz(3), sz(4), dataType);
+    net.layers{18}.weights{2} = zeros(sz(4), 1, dataType);
+else
+    [net, ~] = loadNet(netFilePath);
+end
+
 assert(strcmp(net.layers{end}.type, 'softmax'), 'Wrong network format'); 
-dataTyp = class(net.layers{end-1}.weights{1}); 
 
 % Initiate the last but one layer w/ random weights
 widthPrev = size(net.layers{end-1}.weights{1}, 3);
 nClass0 = size(net.layers{end-1}.weights{1},4);
 if nClass0 ~= nClass || opts.restart, 
-  net.layers{end-1}.weights{1} = init_weight(opts, 1, 1, widthPrev, nClass, dataTyp);
-  net.layers{end-1}.weights{2} = zeros(nClass, 1, dataTyp); 
+  net.layers{end-1}.weights{1} = init_weight(opts, 1, 1, widthPrev, nClass, dataType);
+  net.layers{end-1}.weights{2} = zeros(nClass, 1, dataType); 
 end
 
 % Initiate other layers w/ random weights if training from scratch is desired
@@ -44,14 +76,14 @@ if opts.restart,
   w_layers = find(cellfun(@(c) isfield(c,'weights'),net.layers));
   for i=w_layers(1:end-1), 
     sz = size(net.layers{i}.weights{1}); 
-    net.layers{i}.weights{1} = init_weight(opts, sz(1), sz(2), sz(3), sz(4), dataTyp);
-    net.layers{i}.weights{2} = zeros(sz(4), 1, dataTyp); 
+    net.layers{i}.weights{1} = init_weight(opts, sz(1), sz(2), sz(3), sz(4), dataType);
+    net.layers{i}.weights{2} = zeros(sz(4), 1, dataType); 
   end	
 end
 
 % Swap softmax w/ softmaxloss
 net.layers{end} = struct('type', 'softmaxloss', 'name', 'loss') ;
-    
+
 % Insert viewpooling
 if opts.nViews>1, 
   viewpoolLayer = struct('name', 'viewpool', ...
@@ -72,15 +104,15 @@ if opts.nViews>1,
     if ~isempty(loc),
       sz = size(net.layers{loc}.weights{1});
       if length(sz)<4, sz = [sz ones(1,4-length(sz))]; end
-      net.layers{loc}.weights{1} = init_weight(opts, sz(1), sz(2), sz(3)*opts.nViews, sz(4), dataTyp);
-      net.layers{loc}.weights{2} = zeros(sz(4), 1, dataTyp);
+      net.layers{loc}.weights{1} = init_weight(opts, sz(1), sz(2), sz(3)*opts.nViews, sz(4), dataType);
+      net.layers{loc}.weights{2} = zeros(sz(4), 1, dataType);
       % random initialize layers after
       w_layers = w_layers(w_layers>loc);
       for i=w_layers(1:end-1),
         sz = size(net.layers{i}.weights{1});
         if length(sz)<4, sz = [sz ones(1,4-length(sz))]; end
-        net.layers{i}.weights{1} = init_weight(opts, sz(1), sz(2), sz(3), sz(4), dataTyp);
-        net.layers{i}.weights{2} = zeros(sz(4), 1, dataTyp);
+        net.layers{i}.weights{1} = init_weight(opts, sz(1), sz(2), sz(3), sz(4), dataType);
+        net.layers{i}.weights{2} = zeros(sz(4), 1, dataType);
       end
     end
   end
@@ -91,7 +123,7 @@ end
 net.meta.classes.name = classNames;
 net.meta.classes.description = classNames;
 
-% speial case: when no class names specified, remove fc8/prob layers
+% special case: when no class names specified, remove fc8/prob layers
 if nClass==0, 
     net.layers = net.layers(1:end-2);
 end
