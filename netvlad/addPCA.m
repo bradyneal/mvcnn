@@ -76,7 +76,8 @@ function net= addPCA(net, dbTrain, varargin)
     
     net.layers{end+1}= struct('type', 'conv', 'name', pcaStr, ...
         'weights', {{ reshape(U, [1,1,D,opts.pcaDim]), -Utmu }}, ...
-        'stride', 1, 'pad', 0, 'opts', {{}}, 'precious', false);
+        'stride', 1, 'pad', 0, 'opts', {{}}, 'precious', false, ...
+        'learningRate', []);
     
     % final normalization
     net.layers{end+1}= layerWholeL2Normalize('finalL2');
