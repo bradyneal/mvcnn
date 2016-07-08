@@ -21,7 +21,6 @@ end
 addpath(genpath('dataset'));
 addpath(genpath('utils'));
 addpath(genpath('netvlad'));
-addpath(genpath('matconvnet'));
 
 % -------------------------------------------------------------------------
 %                                                                liblinear
@@ -71,3 +70,8 @@ if doCompile,
 end
 run dependencies/matconvnet/matlab/vl_setupnn.m
 addpath('dependencies/matconvnet/examples/imagenet');
+
+% -------------------------------------------------------------------------
+%                                                                 override
+% -------------------------------------------------------------------------
+addpath(genpath('matconvnet'));
