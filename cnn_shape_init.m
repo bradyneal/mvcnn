@@ -37,7 +37,7 @@ if opts.netvlad
     netvladOpts.netID = 'vgg-m';
     netvladOpts.layerName = 'conv5';
     netvladOpts.method= 'vlad_preL2_intra';
-    netvladOpts.useGPU = false; 
+    netvladOpts.useGPU = true; 
     
     % Load the network and split into two different groups of layers
     % (splitting is to allow for adding of NetVLAD and PCA layers)
@@ -53,12 +53,14 @@ if opts.netvlad
     net.layers = [frontNet.layers backNet.layers];
     
     % Fix weight matrix dimensions where the two networks were put together
+    iVlad = relja_whichLayer(net, 'vlad:core')
+    iCutLayer = numel(frontNet.layers) + 1;
     dataType = class(net.layers{end-1}.weights{1});
-    sz = [1 1 size(net.layers{16}.weights{2}, 1) 4096]; 
-    net.layers{18}.weights{1} = init_weight(...
+    sz = [1 1 numel(net.layers{iVlad}.weights{2}) numel(net.layers{iCutLayer}.weights{2})]; 
+    net.layers{iCutLayer}.weights{1} = init_weight(...
         struct('weightInitMethod', opts.weightInitMethod), ...
         sz(1), sz(2), sz(3), sz(4), dataType);
-    net.layers{18}.weights{2} = zeros(sz(4), 1, dataType);
+    net.layers{iCutLayer}.weights{2} = zeros(sz(4), 1, dataType);
 else
     netvladOpts.netID = 'vgg-m';
     [net, ~] = loadNet(netFilePath, netvladOpts.netID);
