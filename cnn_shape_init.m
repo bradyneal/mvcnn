@@ -40,7 +40,7 @@ if opts.netvlad
     % Load the network and split into two different groups of layers
     % (splitting is to allow for adding of NetVLAD and PCA layers)
     [frontNet, backNet] = loadNet(netFilePath, opts.netvladOpts.netID, ...
-                                  opts.netvladOpts.netvladPos);
+                                  opts.netvladOpts.layerName);
     % Add NetVLAD layers
     frontNet = addLayers(frontNet, opts.netvladOpts, opts.dbTrain);
     % Add PCA and whitening layers
@@ -52,7 +52,7 @@ if opts.netvlad
     net.layers = [frontNet.layers backNet.layers];
     
     % Fix weight matrix dimensions where the two networks were put together
-    iVlad = relja_whichLayer(net, 'vlad:core')
+    iVlad = relja_whichLayer(net, 'vlad:core');
     iCutLayer = numel(frontNet.layers) + 1;
     dataType = class(net.layers{end-1}.weights{1});
     sz = [1 1 numel(net.layers{iVlad}.weights{2}) numel(net.layers{iCutLayer}.weights{2})]; 
