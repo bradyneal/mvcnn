@@ -33,6 +33,12 @@ classdef layerVLADv2
             l.weights= { reshape( weights{1}, [1,1,l.D,l.K]), ...
                          weights{2}, ...
                          reshape( weights{3}, [1,1,l.D,l.K]) };
+                     
+            for j=1:numel(l.weights)
+                l.momentum{j} = zeros(size(l.weights{j}), 'single') ;
+            end
+            l.learningRate = ones(1, 2);
+            l.weightDecay = ones(1, 2);
         end
         
         function y= forward_(l, x)
