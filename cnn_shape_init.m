@@ -2,7 +2,10 @@ function net = cnn_shape_init(classNames, varargin)
 opts.base = 'imagenet-matconvnet-vgg-m'; 
 opts.restart = false;
 opts.netvlad = false;
-opts.netvladPos = 'conv5';
+opts.netvladOpts = struct('netID', 'vgg-m', ...
+                          'layerName', 'conv5', ...
+                          'method', 'vlad_preL2_intra', ...
+                          'useGPU', false);
 opts.dbTrain = 'not provided';
 opts.nViews = 12; 
 opts.viewpoolPos = 'relu5'; 
@@ -34,19 +37,15 @@ end
 
 % Load network and optionally add NetVLAD layer
 if opts.netvlad
-    netvladOpts.netID = 'vgg-m';
-    netvladOpts.layerName = 'conv5';
-    netvladOpts.method= 'vlad_preL2_intra';
-    netvladOpts.useGPU = true; 
-    
     % Load the network and split into two different groups of layers
     % (splitting is to allow for adding of NetVLAD and PCA layers)
-    [frontNet, backNet] = loadNet(netFilePath, netvladOpts.netID, opts.netvladPos);
+    [frontNet, backNet] = loadNet(netFilePath, opts.netvladOpts.netID, ...
+                                  opts.netvladOpts.netvladPos);
     % Add NetVLAD layers
-    frontNet = addLayers(frontNet, netvladOpts, opts.dbTrain);
+    frontNet = addLayers(frontNet, opts.netvladOpts, opts.dbTrain);
     % Add PCA and whitening layers
     frontNet = addPCA(frontNet, opts.dbTrain, 'doWhite', true, 'pcaDim', 4096, ...
-       'batchSize', 10, 'useGPU', netvladOpts.useGPU);
+       'batchSize', 10, 'useGPU', opts.netvladOpts.useGPU);
     
     % Append back layers to the network
     net = frontNet;
@@ -62,8 +61,7 @@ if opts.netvlad
         sz(1), sz(2), sz(3), sz(4), dataType);
     net.layers{iCutLayer}.weights{2} = zeros(sz(4), 1, dataType);
 else
-    netvladOpts.netID = 'vgg-m';
-    [net, ~] = loadNet(netFilePath, netvladOpts.netID);
+    [net, ~] = loadNet(netFilePath, opts.netvladOpts.netID);
     dataType = class(net.layers{end-1}.weights{1});
 end
 
