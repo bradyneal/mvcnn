@@ -109,7 +109,7 @@ opts.train.val = opts.train.val(1:nViews:end);
 
 % dbTrain used for NetVLAD
 dbTrain.dbPath = imdb.imageDir;
-dbTrain.dbImageFns = imdb.images.name([opts.train.train opts.train.val]);
+dbTrain.dbImageFns = imdb.images.name(imdb.images.set <= 2);
 dbTrain.name = dataName;
 dbTrain.numImages = numel(dbTrain.dbImageFns);
 
