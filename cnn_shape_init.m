@@ -47,7 +47,9 @@ if opts.netvlad
 %     frontNet = addPCA(frontNet, opts.dbTrain, 'doWhite', true, 'pcaDim', 4096, ...
 %        'batchSize', 10, 'useGPU', opts.netvladOpts.useGPU);
     
-    % Append back layers to the network
+    % Cut off all but last fully connected layer
+    backNet.layers = backNet.layers(end-1:end);
+    % Combine all layers
     net = frontNet;
     net.layers = [frontNet.layers backNet.layers];
     
