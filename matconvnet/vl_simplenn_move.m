@@ -12,8 +12,6 @@ function net = vl_simplenn_move(net, destination)
 % This file is part of the VLFeat library and is made available under
 % the terms of the BSD license (see the COPYING file).
 
-disp('PAUSED!')
-pause
 switch destination
   case 'gpu', moveop = @(x) gpuArray(x) ;
   case 'cpu', moveop = @(x) gather(x) ;
