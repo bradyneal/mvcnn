@@ -25,7 +25,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
             
             prog= tic;
             
-            for iIm= 1:nIm
+            for iIm = trainIDs
                 relja_progress(iIm, nIm, 'extract train descs', prog);
                 
                 % --- extract descriptors
@@ -87,7 +87,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
         % ---------- Cluster descriptors
         
         relja_display('Computing clusters');
-        clsts= yael_kmeans(trainDescs, k, 'niter', 100, 'verbose', 0, 'seed', 43);
+        clsts= yael_kmeans(trainDescs, k, 'niter', 500, 'verbose', 0, 'seed', 43);
         clear trainDescs;
         
         save(clstFn, 'clsts');
