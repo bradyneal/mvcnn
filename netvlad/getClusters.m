@@ -32,7 +32,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 
                 % didn't want to complicate with batches here as it's only done once (per network and training set)
                 
-                im= vl_imreadjpeg({fullfile(dbTrain.dbPath, dbTrain.dbImageFns{iIm})});
+                im= vl_imreadjpeg({fullfile(dbTrain.dbPath, dbTrain.dbImageFns{trainIDs(iIm)})});
                 im= im{1};
                 
                 % fix non-colour images
@@ -87,7 +87,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
         % ---------- Cluster descriptors
         
         relja_display('Computing clusters');
-        clsts= yael_kmeans(trainDescs, k, 'niter', 100, 'verbose', 0, 'seed', 43);
+        clsts= yael_kmeans(trainDescs, k, 'niter', 500, 'verbose', 0, 'seed', 43);
         clear trainDescs;
         
         save(clstFn, 'clsts');
