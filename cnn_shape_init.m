@@ -7,6 +7,7 @@ opts.netvladOpts = struct('netID', 'vgg-m', ...
                           'method', 'vlad_preL2_intra', ...
                           'useGPU', false);
 opts.dbTrain = 'not provided';
+opts.viewpoint = false;
 opts.nViews = 12; 
 opts.viewpoolPos = 'relu5'; 
 opts.viewpoolType = 'max';
@@ -35,12 +36,27 @@ if ~exist(netFilePath,'file')
     fprintf(' done!\n');
 end
 
-% Load network and optionally add NetVLAD layer
+% Load network and optionally add viewpoint and NetVLAD layers
 if opts.netvlad
     % Load the network and split into two different groups of layers
     % (splitting is to allow for adding of NetVLAD and PCA layers)
     [frontNet, backNet] = loadNet(netFilePath, opts.netvladOpts.netID, ...
                                   opts.netvladOpts.layerName);
+                              
+    % Add viewpoint information: theta
+    if opts.viewpoint
+        % NOTE: Check how numViews is initialized when multiview is false!
+        % Consider just printing it here.
+        viewpointLayer = struct('name', 'viewpoint', ...
+                                'type', 'custom', ...
+                                'numViews', opts.numViews, ...
+                                'forward', @viewpoint_fw, ...
+                                'backward', @viewpoint_bw);
+        frontNet = modify_net(frontNet, viewpointLayer, ...
+                              'mode', 'add_layer', ...
+                              'loc', opts.netvladOpts.layerName);
+    end
+                              
     % Add NetVLAD layers
     frontNet = addLayers(frontNet, opts.netvladOpts, opts.dbTrain);
     % Add PCA and whitening layers
@@ -157,6 +173,60 @@ switch lower(opts.weightInitMethod)
     weights = randn(h, w, in, out, type)*sc ;
   otherwise
     error('Unknown weight initialization method''%s''', opts.weightInitMethod) ;
+end
+
+end
+
+
+% -------------------------------------------------------------------------
+function res_ip1 = viewpoint_fw(layer, res_i, res_ip1)
+% -------------------------------------------------------------------------
+[sz1, sz2, sz3, sz4] = size(res_i.x);
+if mod(sz4,layer.vstride)~=0, 
+    error('all shapes should have same number of views');
+end
+if strcmp(layer.method, 'avg'), 
+    res_ip1.x = permute(...
+        mean(reshape(res_i.x,[sz1 sz2 sz3 layer.vstride sz4/layer.vstride]), 4), ...
+        [1,2,3,5,4]);
+elseif strcmp(layer.method, 'max'), 
+    res_ip1.x = permute(...
+        max(reshape(res_i.x,[sz1 sz2 sz3 layer.vstride sz4/layer.vstride]), [], 4), ...
+        [1,2,3,5,4]);
+elseif strcmp(layer.method, 'cat'),
+    res_ip1.x = reshape(res_i.x,[sz1 sz2 sz3*layer.vstride sz4/layer.vstride]);
+else
+    error('Unknown viewpool method: %s', layer.method);
+end
+
+end
+
+
+% -------------------------------------------------------------------------
+function res_i = viewpoint_bw(layer, res_i, res_ip1)
+% -------------------------------------------------------------------------
+[sz1, sz2, sz3, sz4] = size(res_ip1.dzdx);
+if strcmp(layer.method, 'avg'), 
+    res_i.dzdx = ...
+        reshape(repmat(reshape(res_ip1.dzdx / layer.vstride, ...
+                       [sz1 sz2 sz3 1 sz4]), ...
+                [1 1 1 layer.vstride 1]),...
+        [sz1 sz2 sz3 layer.vstride*sz4]);
+elseif strcmp(layer.method, 'max'), 
+    [~,I] = max(reshape(permute(res_i.x,[4 1 2 3]), ...
+                [layer.vstride, sz4*sz1*sz2*sz3]),[],1);
+    Ind = zeros(layer.vstride,sz4*sz1*sz2*sz3, 'single');
+    Ind(sub2ind(size(Ind),I,1:length(I))) = 1;
+    Ind = permute(reshape(Ind,[layer.vstride*sz4,sz1,sz2,sz3]),[2 3 4 1]);
+    res_i.dzdx = ...
+        reshape(repmat(reshape(res_ip1.dzdx, ...
+                       [sz1 sz2 sz3 1 sz4]), ...
+                [1 1 1 layer.vstride 1]),...
+        [sz1 sz2 sz3 layer.vstride*sz4]) .* Ind;
+elseif strcmp(layer.method, 'cat'),
+    res_i.dzdx = reshape(res_ip1.dzdx, [sz1 sz2 sz3/layer.vstride sz4*layer.vstride]);
+else
+    error('Unknown viewpool method: %s', layer.method);
 end
 
 end
