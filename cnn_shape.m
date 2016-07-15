@@ -149,7 +149,7 @@ end
 fc_layers = find(cellfun(@(s) numel(s.name)>=2 && strcmp(s.name(1:2),'fc'),net.layers));
 fc_layers = intersect(fc_layers, trainable_layers); 
 lr = cellfun(@(l) l.learningRate, net.layers(trainable_layers),'UniformOutput',false); 
-layers_for_update = {trainable_layers(end), fc_layers, trainable_layers}; 
+layers_for_update = {trainable_layers(end), trainable_layers(end-1:end), trainable_layers}; 
 
 for s=1:numel(opts.numEpochs), 
   if opts.numEpochs(s)<1, continue; end
