@@ -25,7 +25,11 @@ nClass = length(classNames);
 if ~strcmpi(opts.base(end - 3:end),'.mat')
     opts.base = strcat(opts.base, '.mat');
 end
-netFilePath = fullfile('data','models', opts.base);
+if strcmp(opts.base(1:length('data')), 'data')
+    netFilePath = opts.base;
+else
+    netFilePath = fullfile('data','models', opts.base);
+end
 
 % Download network if doesn't already exist
 if ~exist(netFilePath,'file')
