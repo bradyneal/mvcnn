@@ -25,7 +25,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
             
             prog= tic;
             
-            for iIm= 1:nIm
+            for iIm = trainIDs
                 relja_progress(iIm, nIm, 'extract train descs', prog);
                 
                 % --- extract descriptors
