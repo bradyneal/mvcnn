@@ -37,8 +37,8 @@ classdef layerVLADv2
             for j=1:numel(l.weights)
                 l.momentum{j} = zeros(size(l.weights{j}), 'single') ;
             end
-            l.learningRate = ones(1, 2);
-            l.weightDecay = ones(1, 2);
+            l.learningRate = ones(1, 3);
+            l.weightDecay = ones(1, 3);
         end
         
         function y= forward_(l, x)
