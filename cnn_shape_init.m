@@ -55,7 +55,8 @@ if opts.netvlad
                                 'type', 'custom', ...
                                 'numViews', opts.netvladOpts.numViews, ...
                                 'forward', @theta_fw, ...
-                                'backward', @theta_bw);
+                                'backward', @theta_bw, ...
+                                'precious', false);
         frontNet = modify_net(frontNet, viewpointLayer, ...
                               'mode', 'add_layer', ...
                               'loc', opts.netvladOpts.layerName);
@@ -192,9 +193,9 @@ if mod(sz4, numViews) ~= 0 && sz4 ~= 1,
 end
 
 for i = 1:sz4
-    viewId = mod(i - 1, numViews) + 1;
-    viewIdNorm = viewId / numViews - 0.5;
-    res_ip1.x(:, :, sz3 + 1, i) = viewIdNorm * ones(sz1, sz2, 1);
+	viewId = mod(i - 1, numViews) + 1;
+	viewIdNorm = viewId / numViews - 0.5;
+	res_ip1.x(:, :, sz3 + 1, i) = viewIdNorm * ones(sz1, sz2, 1);
 end
 
 end
