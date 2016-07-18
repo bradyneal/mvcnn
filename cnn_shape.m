@@ -44,6 +44,8 @@ opts.netvlad = false;
 opts.netID = 'vgg-m';
 opts.netvladPos = 'conv5';
 opts.netvladMethod = 'vlad_preL2_intra';
+opts.netvladNumViews = 12;
+opts.netvladTheta = true;
 opts.multiview = true; 
 opts.viewpoolPos = 'relu5';
 opts.useUprightAssumption = true;
@@ -80,7 +82,9 @@ opts.train = vl_argparse(opts.train, varargin) ;
 opts.netvladOpts = struct('netID', opts.netID, ...
                           'layerName', opts.netvladPos, ...
                           'method', opts.netvladMethod, ...
-                          'useGPU', numel(opts.train.gpus) > 0);
+                          'useGPU', numel(opts.train.gpus) > 0, ...
+                          'numViews', opts.netvladNumViews, ...
+                          'theta', opts.netvladTheta);
 
 if ~exist(opts.expDir, 'dir'), vl_xmkdir(opts.expDir) ; end
 

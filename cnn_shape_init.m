@@ -5,9 +5,11 @@ opts.netvlad = false;
 opts.netvladOpts = struct('netID', 'vgg-m', ...
                           'layerName', 'conv5', ...
                           'method', 'vlad_preL2_intra', ...
-                          'useGPU', false);
+                          'useGPU', false, ...
+                          'numViews', 12, ...
+                          'theta', true);
 opts.dbTrain = 'not provided';
-opts.viewpoint = false;
+opts.theta = true;
 opts.nViews = 12; 
 opts.viewpoolPos = 'relu5'; 
 opts.viewpoolType = 'max';
@@ -47,15 +49,13 @@ if opts.netvlad
     [frontNet, backNet] = loadNet(netFilePath, opts.netvladOpts.netID, ...
                                   opts.netvladOpts.layerName);
                               
-    % Add viewpoint information: theta
-    if opts.viewpoint
-        % NOTE: Check how numViews is initialized when multiview is false!
-        % Consider just printing it here.
+    % Add viewpoint information (theta)
+    if opts.netvladOpts.theta
         viewpointLayer = struct('name', 'viewpoint', ...
                                 'type', 'custom', ...
-                                'numViews', opts.numViews, ...
-                                'forward', @viewpoint_fw, ...
-                                'backward', @viewpoint_bw);
+                                'numViews', opts.netvladOpts.numViews, ...
+                                'forward', @theta_fw, ...
+                                'backward', @theta_bw);
         frontNet = modify_net(frontNet, viewpointLayer, ...
                               'mode', 'add_layer', ...
                               'loc', opts.netvladOpts.layerName);
@@ -183,55 +183,27 @@ end
 
 
 % -------------------------------------------------------------------------
-function res_ip1 = viewpoint_fw(layer, res_i, res_ip1)
+function res_ip1 = theta_fw(layer, res_i, res_ip1)
 % -------------------------------------------------------------------------
 [sz1, sz2, sz3, sz4] = size(res_i.x);
-if mod(sz4,layer.vstride)~=0, 
+numViews = layer.numViews;
+if mod(sz4, numViews) ~= 0 && sz4 ~= 1, 
     error('all shapes should have same number of views');
 end
-if strcmp(layer.method, 'avg'), 
-    res_ip1.x = permute(...
-        mean(reshape(res_i.x,[sz1 sz2 sz3 layer.vstride sz4/layer.vstride]), 4), ...
-        [1,2,3,5,4]);
-elseif strcmp(layer.method, 'max'), 
-    res_ip1.x = permute(...
-        max(reshape(res_i.x,[sz1 sz2 sz3 layer.vstride sz4/layer.vstride]), [], 4), ...
-        [1,2,3,5,4]);
-elseif strcmp(layer.method, 'cat'),
-    res_ip1.x = reshape(res_i.x,[sz1 sz2 sz3*layer.vstride sz4/layer.vstride]);
-else
-    error('Unknown viewpool method: %s', layer.method);
+
+for i = 1:sz4
+    viewId = mod(i - 1, numViews) + 1;
+    viewIdNorm = viewId / numViews - 0.5;
+    res_ip1.x(:, :, sz3 + 1, i) = viewIdNorm * ones(sz1, sz2, 1);
 end
 
 end
 
 
 % -------------------------------------------------------------------------
-function res_i = viewpoint_bw(layer, res_i, res_ip1)
+function res_i = theta_bw(layer, res_i, res_ip1)
 % -------------------------------------------------------------------------
-[sz1, sz2, sz3, sz4] = size(res_ip1.dzdx);
-if strcmp(layer.method, 'avg'), 
-    res_i.dzdx = ...
-        reshape(repmat(reshape(res_ip1.dzdx / layer.vstride, ...
-                       [sz1 sz2 sz3 1 sz4]), ...
-                [1 1 1 layer.vstride 1]),...
-        [sz1 sz2 sz3 layer.vstride*sz4]);
-elseif strcmp(layer.method, 'max'), 
-    [~,I] = max(reshape(permute(res_i.x,[4 1 2 3]), ...
-                [layer.vstride, sz4*sz1*sz2*sz3]),[],1);
-    Ind = zeros(layer.vstride,sz4*sz1*sz2*sz3, 'single');
-    Ind(sub2ind(size(Ind),I,1:length(I))) = 1;
-    Ind = permute(reshape(Ind,[layer.vstride*sz4,sz1,sz2,sz3]),[2 3 4 1]);
-    res_i.dzdx = ...
-        reshape(repmat(reshape(res_ip1.dzdx, ...
-                       [sz1 sz2 sz3 1 sz4]), ...
-                [1 1 1 layer.vstride 1]),...
-        [sz1 sz2 sz3 layer.vstride*sz4]) .* Ind;
-elseif strcmp(layer.method, 'cat'),
-    res_i.dzdx = reshape(res_ip1.dzdx, [sz1 sz2 sz3/layer.vstride sz4*layer.vstride]);
-else
-    error('Unknown viewpool method: %s', layer.method);
-end
+res_i.dzdx = res_ip1.dzdx(:, :, 1:size(res_i.dzdx, 3), :);
 
 end
 
