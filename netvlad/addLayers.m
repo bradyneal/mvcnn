@@ -38,6 +38,12 @@ function net= addLayers(net, opts, dbTrain)
             L2str= '';
         end
         
+        if opts.useAllData
+            allData = '_allData';
+        else
+            allData = '';
+        end
+        
         if opts.xy
             xy = '_xy';
         else
@@ -50,8 +56,8 @@ function net= addLayers(net, opts, dbTrain)
             theta = '';
         end
         
-        whichDesc= sprintf('%s_%s%s%s%s', opts.netID, opts.layerName, L2str, ...
-                           xy, theta);
+        whichDesc= sprintf('%s_%s%s%s%s%s', opts.netID, opts.layerName, L2str, ...
+                           allData, xy, theta);
         
         k= 64;
         paths= localPaths();

@@ -21,6 +21,11 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
             rng(43);
             trainIDs= randsample(dbTrain.numImages, nIm);
             
+            if opts.useAllData
+                nIm = dbTrain.numImages;
+                trainIDs = 1:dbTrain.numImages;
+            end
+            
             nTotal= 0;
             
             prog= tic;
