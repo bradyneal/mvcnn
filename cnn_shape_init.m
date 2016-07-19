@@ -51,7 +51,7 @@ if opts.netvlad
                               
     % Add viewpoint information (theta)
     if opts.netvladOpts.theta
-        viewpointLayer = struct('name', 'viewpoint', ...
+        viewpointLayer = struct('name', 'append_theta', ...
                                 'type', 'custom', ...
                                 'numViews', opts.netvladOpts.numViews, ...
                                 'forward', @theta_fw, ...
@@ -192,6 +192,7 @@ if mod(sz4, numViews) ~= 0 && sz4 ~= 1,
     error('all shapes should have same number of views');
 end
 
+res_ip1.x = res_i.x;
 for i = 1:sz4
 	viewId = mod(i - 1, numViews) + 1;
 	viewIdNorm = viewId / numViews - 0.5;
@@ -204,7 +205,7 @@ end
 % -------------------------------------------------------------------------
 function res_i = theta_bw(layer, res_i, res_ip1)
 % -------------------------------------------------------------------------
-res_i.dzdx = res_ip1.dzdx(:, :, 1:size(res_i.dzdx, 3), :);
+res_i.dzdx = res_ip1.dzdx(:, :, 1:size(res_i.x, 3), :);
 
 end
 
