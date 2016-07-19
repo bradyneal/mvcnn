@@ -7,6 +7,7 @@ opts.netvladOpts = struct('netID', 'vgg-m', ...
                           'method', 'vlad_preL2_intra', ...
                           'useGPU', false, ...
                           'numViews', 12, ...
+                          'xy', true, ...
                           'theta', true);
 opts.dbTrain = 'not provided';
 opts.theta = true;
@@ -48,6 +49,18 @@ if opts.netvlad
     % (splitting is to allow for adding of NetVLAD and PCA layers)
     [frontNet, backNet] = loadNet(netFilePath, opts.netvladOpts.netID, ...
                                   opts.netvladOpts.layerName);
+    
+    % Add spacial information (x, y)                          
+    if opts.netvladOpts.xy
+        spacialLayer = struct('name', 'append_xy', ...
+                               'type', 'custom', ...
+                               'forward', @xy_fw, ...
+                               'backward', @xy_bw, ...
+                               'precious', false);
+        frontNet = modify_net(frontNet, spacialLayer, ...
+                              'mode', 'add_layer', ...
+                              'loc', opts.netvladOpts.layerName);
+    end                         
                               
     % Add viewpoint information (theta)
     if opts.netvladOpts.theta
@@ -179,6 +192,36 @@ switch lower(opts.weightInitMethod)
   otherwise
     error('Unknown weight initialization method''%s''', opts.weightInitMethod) ;
 end
+
+end
+
+
+% -------------------------------------------------------------------------
+function res_ip1 = xy_fw(layer, res_i, res_ip1)
+% -------------------------------------------------------------------------
+[sz1, sz2, sz3, sz4] = size(res_i.x);
+
+res_ip1.x = res_i.x;
+
+% Grab (x, y) for each descriptor location
+x = repmat(1:sz2, sz1, 1);
+y = repmat((1:sz1)', 1, sz2);
+
+% Normalize (x, y)
+xNormalized = x / sz2 - 0.5;
+yNormalized = y / sz1 - 0.5;
+
+% Replicate for all examples in batch and append (x, y)
+xy = cat(3, xNormalized, yNormalized);
+res_ip1.x(:, :, sz3 + 1:sz3 + 2, :) = repmat(xy, 1, 1, 1, sz4);
+
+end
+
+
+% -------------------------------------------------------------------------
+function res_i = xy_bw(layer, res_i, res_ip1)
+% -------------------------------------------------------------------------
+res_i.dzdx = res_ip1.dzdx(:, :, 1:size(res_i.x, 3), :);
 
 end
 
