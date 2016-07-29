@@ -56,6 +56,7 @@ opts.pad = 0;
 opts.border = 0; 
 opts.numEpochs = [5 10 20]; 
 opts.includeVal = false;
+opts.test = false;
 [opts, varargin] = vl_argparse(opts, varargin) ;
 
 if opts.multiview, 
@@ -107,10 +108,14 @@ end
 imdb.meta.nViews = nViews; 
 
 opts.train.train = find(imdb.images.set==1);
-opts.train.val = find(imdb.images.set==2); 
+opts.train.val = find(imdb.images.set==2);
 if opts.includeVal, 
   opts.train.train = [opts.train.train opts.train.val];
   opts.train.val = [];
+end
+if opts.test
+    opts.train.train = [];
+    opts.train.val = find(imdb.images.set==3);
 end
 opts.train.train = opts.train.train(1:nViews:end);
 opts.train.val = opts.train.val(1:nViews:end); 
@@ -144,7 +149,6 @@ end
 
 trainable_layers = find(cellfun(@(l) isfield(l, 'weights') || ...
                                      isprop(l, 'weights'), net.layers));
-assignin('base', 'net', net);
 disp('Trainable layers:')
 for i = 1:numel(trainable_layers)
     l = trainable_layers(i);
@@ -169,11 +173,13 @@ for s=1:numel(opts.numEpochs),
       net.layers{l}.learningRate = lr{i}*0;
     end
   end
+
   net = trainFn(net, imdb, getBatchFn(opts, net.meta), ...
     'expDir', opts.expDir, ...
     net.meta.trainOpts, ...
     opts.train, ...
-    'numEpochs', sum(opts.numEpochs(1:s))) ;
+    'numEpochs', sum(opts.numEpochs(1:s)), ...
+    'test', opts.test) ;
 end
 
 % -------------------------------------------------------------------------
