@@ -98,6 +98,9 @@ if opts.netvlad
         struct('weightInitMethod', opts.weightInitMethod), ...
         sz(1), sz(2), sz(3), sz(4), dataType);
     net.layers{iCutLayer}.weights{2} = zeros(sz(4), 1, dataType);
+    
+    % Change weight decay parameter to 0
+    net.meta.trainOpts.weightDecay = 0;
 else
     [net, ~] = loadNet(netFilePath, opts.netvladOpts.netID);
     dataType = class(net.layers{end-1}.weights{1});
