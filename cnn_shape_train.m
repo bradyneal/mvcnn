@@ -39,6 +39,7 @@ opts.weightDecay = 0.0005 ;
 opts.momentum = 0.9 ;
 opts.memoryMapFile = fullfile(tempdir, 'matconvnet.bin') ;
 opts.profile = false ;
+opts.test = false;
 
 opts.conserveMemory = true ;
 opts.backPropDepth = +inf ;
@@ -55,7 +56,7 @@ opts.balancingFunction = @(v) v;
 opts = vl_argparse(opts, varargin) ;
 
 if ~exist(opts.expDir, 'dir'), mkdir(opts.expDir) ; end
-if isempty(opts.train), opts.train = find(imdb.images.set==1) ; end
+% if isempty(opts.train), opts.train = find(imdb.images.set==1) ; end
 if isempty(opts.val), opts.val = find(imdb.images.set==2) ; end
 if isnan(opts.train), opts.train = [] ; end
 if isnan(opts.val), opts.val = [] ; end
@@ -137,7 +138,7 @@ end
 trainQueue = [];
 valQueue = []; 
 for epoch=start+1:opts.numEpochs
-
+    
   % train one epoch and validate
   learningRate = opts.learningRate(min(epoch, numel(opts.learningRate))) ;
 
@@ -147,6 +148,7 @@ for epoch=start+1:opts.numEpochs
   if numGpus <= 1
     [net,stats.train,prof] = process_epoch(opts, getBatch, epoch, train, learningRate, imdb, net) ;
     [~,stats.val] = process_epoch(opts, getBatch, epoch, val, 0, imdb, net) ;
+    
     if opts.profile
       profile('viewer') ;
       keyboard ;
@@ -182,7 +184,11 @@ for epoch=start+1:opts.numEpochs
     save(modelPath(epoch), 'net', 'info') ;
     fprintf('%s: model saved in %.2g s\n', mfilename, toc) ;
   end
-
+  
+  if opts.test
+      fprintf('Accuracy: %.4g\n', 1 - info.val.error(1, end))
+  end
+  
   if opts.plotStatistics
     switchfigure(1) ; clf ;
     subplot(1,1+hasError,1) ;
@@ -211,7 +217,10 @@ for epoch=start+1:opts.numEpochs
       title('error') ;
     end
     drawnow ;
-    print(1, modelFigPath, '-dpdf') ;
+    
+    if ~opts.test
+        print(1, modelFigPath, '-dpdf') ;
+    end
   end
 end
 
@@ -326,6 +335,7 @@ for t=1:opts.batchSize:numel(subset)
     % evaluate the CNN
     net.layers{end}.class = labels ;
     if training, dzdy = one; else, dzdy = [] ; end
+    
     res = vl_simplenn(net, im, dzdy, res, ...
                       'accumulate', s ~= 1, ...
                       'mode', evalMode, ...
@@ -333,7 +343,7 @@ for t=1:opts.batchSize:numel(subset)
                       'backPropDepth', opts.backPropDepth, ...
                       'sync', opts.sync, ...
                       'cudnn', opts.cudnn) ;
-
+                  
     % accumulate training errors
     error = sum([error, [...
       sum(double(gather(res(end).x))) ;
@@ -354,7 +364,7 @@ for t=1:opts.batchSize:numel(subset)
       [net,res] = accumulate_gradients(opts, learningRate, batchSize, net, res, mmap) ;
     end
   end
-
+  
   % collect and print learning statistics
   time = toc(start) ;
   stats = sum([stats,[0 ; error]],2); % works even when stats=[]
