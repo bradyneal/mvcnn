@@ -37,22 +37,14 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 
                 % didn't want to complicate with batches here as it's only done once (per network and training set)
                 
-                im= vl_imreadjpeg({fullfile(dbTrain.dbPath, dbTrain.dbImageFns{trainIDs(iIm)})});
-                im= im{1};
+                im = cnn_shape_get_batch(...
+                    {fullfile(dbTrain.dbPath, dbTrain.dbImageFns{trainIDs(iIm)})}, ...
+                    'pad', opts.pad, ...
+                    'border', opts.border);
                 
                 % fix non-colour images
                 if size(im,3)==1
                     im= cat(3,im,im,im);
-                end
-                
-                if numel(net.meta.normalization.averageImage) == 3
-                    im(:,:,1)= im(:,:,1) - net.meta.normalization.averageImage(1);
-                    im(:,:,2)= im(:,:,2) - net.meta.normalization.averageImage(2);
-                    im(:,:,3)= im(:,:,3) - net.meta.normalization.averageImage(3);
-                else
-                    im(:,:,1)= im(:,:,1) - net.meta.normalization.averageImage(1,1,1);
-                    im(:,:,2)= im(:,:,2) - net.meta.normalization.averageImage(1,1,2);
-                    im(:,:,3)= im(:,:,3) - net.meta.normalization.averageImage(1,1,3);
                 end
                 
                 if opts.useGPU
