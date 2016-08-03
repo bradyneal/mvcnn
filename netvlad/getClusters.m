@@ -21,6 +21,18 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
             rng(43);
             trainIDs= randsample(dbTrain.numImages, nIm);
             
+            if opts.theta
+                % Get thetas for training examples
+                viewIds = repmat(1:opts.numViews, 1, dbTrain.numImages / opts.numViews);
+                thetas = normalizeAngles(viewIds(trainIDs), opts.numViews, 'unit');
+
+                % Remove append_theta layer (manually added later in this file)
+                frontNet = net;
+                frontNet.layers = net.layers(1:relja_whichLayer(net, 'append_theta') - 1);
+                backNet = net;
+                backNet.layers = net.layers(relja_whichLayer(net, 'append_theta') + 1:end);
+            end
+            
             if opts.useAllData
                 nIm = dbTrain.numImages;
                 trainIDs = 1:dbTrain.numImages;
@@ -51,8 +63,26 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                     im= gpuArray(im);
                 end
                 
-                res= vl_simplenn(net, im, [], [], simpleNnOpts{:});
+                % Get CNN descriptors
+                if opts.theta
+                    frontRes = vl_simplenn(frontNet, im, [], [], simpleNnOpts{:});
+                    
+                    % Manually append theta
+                    [sz1, sz2, sz3] = size(frontRes(end).x);
+                    frontRes(end).x(:, :, sz3 + 1) = repmat(thetas(iIm), sz1, sz2);
+                    
+                    res = vl_simplenn(backNet, frontRes(end).x, [], [], simpleNnOpts{:}); 
+                else
+                    res = vl_simplenn(net, im, [], [], simpleNnOpts{:});
+                end
+                
                 descs= gather(res(end).x);
+                assignin('base', 'trainId', trainIDs(iIm))
+                assignin('base', 'descs', descs)
+                assignin('base', 'clustsIm', im)
+                fprintf('imName: %s\n', dbTrain.dbImageFns{trainIDs(iIm)})
+                disp('paused in getClusters.m')
+                pause
                 descs= reshape( descs, [], size(descs,3) )';
                 
                 % --- sample descriptors

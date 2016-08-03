@@ -46,13 +46,17 @@ if ~exist(netFilePath,'file')
     fprintf(' done!\n');
 end
 
+netvladBase = ~isempty(strfind(opts.base, 'netvlad'));
+
 % Load network and optionally add viewpoint and NetVLAD layers
-if opts.netvlad
+if opts.netvlad && ~netvladBase
     % Load the network and split into two different groups of layers
     % (splitting is to allow for adding of NetVLAD and PCA layers)
     [frontNet, backNet] = loadNet(netFilePath, opts.netvladOpts.netID, ...
                                   opts.netvladOpts.layerName);
     
+    thetaLayerName = opts.netvladOpts.layerName;                          
+                              
     % Add spatial information (x, y)                          
     if opts.netvladOpts.xy
         spatialLayer = struct('name', 'append_xy', ...
@@ -63,6 +67,7 @@ if opts.netvlad
         frontNet = modify_net(frontNet, spatialLayer, ...
                               'mode', 'add_layer', ...
                               'loc', opts.netvladOpts.layerName);
+        thetaLayerName = 'append_xy';
     end                         
                               
     % Add viewpoint information (theta)
@@ -75,9 +80,9 @@ if opts.netvlad
                                 'precious', false);
         frontNet = modify_net(frontNet, viewpointLayer, ...
                               'mode', 'add_layer', ...
-                              'loc', opts.netvladOpts.layerName);
+                              'loc', thetaLayerName);
     end
-                              
+                          
     % Add NetVLAD layers
     frontNet = addLayers(frontNet, opts.netvladOpts, opts.dbTrain);
     % Add PCA and whitening layers
@@ -244,8 +249,8 @@ end
 res_ip1.x = res_i.x;
 for i = 1:sz4
 	viewId = mod(i - 1, numViews) + 1;
-	viewIdNorm = viewId / numViews - 0.5;
-	res_ip1.x(:, :, sz3 + 1, i) = viewIdNorm * ones(sz1, sz2, 1);
+	viewIdNorm = normalizeAngles(viewId, numViews, 'unit');
+	res_ip1.x(:, :, sz3 + 1, i) = repmat(viewIdNorm, sz1, sz2, 1);
 end
 
 end
