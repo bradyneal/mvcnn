@@ -50,7 +50,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 % didn't want to complicate with batches here as it's only done once (per network and training set)
                 
                 im = cnn_shape_get_batch(...
-                    {fullfile(dbTrain.dbPath, dbTrain.dbImageFns{trainIDs(iIm)})}, ...
+                    {fullfile(dbTrain.imageDir, dbTrain.images.name{trainIDs(iIm)})}, ...
                     'pad', opts.pad, ...
                     'border', opts.border);
                 
@@ -80,7 +80,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 assignin('base', 'trainId', trainIDs(iIm))
                 assignin('base', 'descs', descs)
                 assignin('base', 'clustsIm', im)
-                fprintf('imName: %s\n', dbTrain.dbImageFns{trainIDs(iIm)})
+                fprintf('imName: %s\n', dbTrain.images.name{trainIDs(iIm)})
                 disp('paused in getClusters.m')
                 pause
                 descs= reshape( descs, [], size(descs,3) )';

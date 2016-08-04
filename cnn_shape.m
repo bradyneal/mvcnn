@@ -123,6 +123,16 @@ opts.train.train = opts.train.train(1:nViews:end);
 opts.train.val = opts.train.val(1:nViews:end); 
 
 % dbTrain used for NetVLAD
+dbTrain = imdb;
+train_val = find(dbTrain.images.set <= 2);
+dbTrain.images = struct('name', {dbTrain.images.name(train_val)}, ...
+                        'class', dbTrain.images.class(train_val), ...
+                        'set', dbTrain.images.set(train_val), ...
+                        'sid', dbTrain.images.sid(train_val), ...
+                        'id', dbTrain.images.id(train_val));
+dbTrain.name = dataName;
+dbTrain.numImages = numel(dbTrain.images.name);
+
 dbTrain.dbPath = imdb.imageDir;
 dbTrain.dbImageFns = imdb.images.name(imdb.images.set <= 2);
 dbTrain.name = dataName;
