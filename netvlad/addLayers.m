@@ -1,4 +1,4 @@
-function net= addLayers(net, opts, dbTrain)
+function net= addLayers(net, opts, dbTrain, getBatch)
     
     
     
@@ -64,7 +64,7 @@ function net= addLayers(net, opts, dbTrain)
         trainDescFn= sprintf('%s%s_%s_traindescs.mat', paths.initData, dbTrain.name, whichDesc);
         clstFn= sprintf('%s%s_%s_k%03d_clst.mat', paths.initData, dbTrain.name, whichDesc, k);
         
-        clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn);
+        clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn, getBatch);
         
         load( trainDescFn, 'trainDescs');
         load( clstFn, 'clsts');

@@ -1,4 +1,4 @@
-function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
+function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn, getBatch)
     
     if ~exist(clstFn, 'file')
         
@@ -49,10 +49,7 @@ function clsts= getClusters(net, opts, clstFn, k, dbTrain, trainDescFn)
                 
                 % didn't want to complicate with batches here as it's only done once (per network and training set)
                 
-                im = cnn_shape_get_batch(...
-                    {fullfile(dbTrain.imageDir, dbTrain.images.name{trainIDs(iIm)})}, ...
-                    'pad', opts.pad, ...
-                    'border', opts.border);
+                [im, ~] = getBatch(dbTrain, iIm);
                 
                 % fix non-colour images
                 if size(im,3)==1

@@ -20,6 +20,11 @@ opts.viewpoolType = 'max';
 opts.weightInitMethod = 'xavierimproved';
 opts.scale = 1;
 opts.networkType = 'simplenn'; % only simplenn is supported currently
+opts.getBatchOpts = struct('pad', 0, ...
+                           'border', 0, ...
+                           'aug', 'stretch', ...
+                           'numFetchThreads', 0, ...
+                           'networkType', opts.networkType);
 opts = vl_argparse(opts, varargin); 
 
 assert(strcmp(opts.networkType,'simplenn'), 'Only simplenn is supported currently'); 
@@ -84,7 +89,8 @@ if opts.netvlad && ~netvladBase
     end
                           
     % Add NetVLAD layers
-    frontNet = addLayers(frontNet, opts.netvladOpts, opts.dbTrain);
+    frontNet = addLayers(frontNet, opts.netvladOpts, opts.dbTrain, ...
+                         getBatchFn(opts.getBatchOpts, frontNet.meta));
     % Add PCA and whitening layers
 %     frontNet = addPCA(frontNet, opts.dbTrain, 'doWhite', true, 'pcaDim', 4096, ...
 %        'batchSize', 10, 'useGPU', opts.netvladOpts.useGPU);
